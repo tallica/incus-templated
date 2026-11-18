@@ -43,7 +43,7 @@ Each `Instance`:
 
 A label change, an address change, or a move to another cluster member re-renders the target.
 
-A label or flag an instance or target does not carry renders as an empty string, so `{{ .Labels.port }}` on an instance without `port` gives nothing rather than `<no value>`. Test for it with `{{ if .Labels.port }}`. Where an empty value would still pass the target's checks but be wrong, wrap it in `required` to fail the render instead: the live file is left as it is and the error is logged.
+A label or flag an instance or target does not carry renders as an empty string, so `{{ .Labels.port }}` on an instance without `port` gives nothing rather than `<no value>`. Test for it with `{{ if .Labels.port }}`. Where an empty value would still pass the target's checks but be wrong, wrap it in `required` to fail the render instead, and the error is logged. When a render fails, each instance is rendered on its own: the ones that fail are left out of the file, and the rest are deployed. When every instance fails, or none does alone, the fault is the target's and the live file is left as it is.
 
 ## Template Funcs
 
@@ -115,7 +115,7 @@ When instances sit on a per-member NAT bridge and are reached through a proxy de
 --target edge,path=/etc/caddy/Caddyfile,template=members.caddyfile,format='caddy fmt --overwrite {staging}',reload='caddy reload --config {path}',member.node1=10.0.0.11,member.node2=10.0.0.12
 ```
 
-Without `required`, an instance on a member with no flag would render `reverse_proxy :8122`, which `caddy validate` accepts and Caddy proxies to localhost.
+Without `required`, an instance on a member with no flag would render `reverse_proxy :8122`, which `caddy validate` accepts and Caddy proxies to localhost. With it, that instance is left out and logged with `no member.node3 flag`, and the other instances keep deploying.
 
 ---
 

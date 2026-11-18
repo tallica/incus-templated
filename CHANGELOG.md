@@ -25,7 +25,8 @@ variable and default path changed; there is no compatibility layer.
 - Templates get `.Label`, `.Flags` and `.Instances`, each instance with its
   name, project, cluster member (`.Location`), label values, config, devices
   and network interfaces, plus the `json`, `join`, `split` and `required`
-  funcs; `required` fails the render on an empty value.
+  funcs; `required` fails the render on an empty value. An instance that
+  fails to render is left out of the file instead of holding back the rest.
   Prometheus file_sd and per-member examples are in the docs. (by @tallica)
 - Every target's template is read and parsed at startup; a bad target stops
   `incus-templated` before it connects. (by @tallica)

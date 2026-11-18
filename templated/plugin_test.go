@@ -393,6 +393,54 @@ func TestPluginReconcileOSTarget(t *testing.T) {
 	require.True(t, os.IsNotExist(err))
 }
 
+func TestPluginReconcileLeavesOutAnInstanceThatFailsToRender(t *testing.T) {
+	tmpDir := t.TempDir()
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	membersTmpl := `{{ range .Instances }}{{ .Label }} {{ required "no member flag" (index $.Flags (printf "member.%s" .Location)) }}
+{{ end }}`
+
+	newPlugin := func(path string) *Plugin {
+		return New(logger, Config{
+			Targets: []Target{{
+				Label: "edge",
+				Path:  path,
+				Text:  membersTmpl,
+				Flags: map[string]string{"member.node1": "10.0.0.11", "member.node2": "10.0.0.12"},
+			}},
+		})
+	}
+
+	add := func(p *Plugin, name, location string) {
+		inst := iutil.NewInstance(true, location, map[string]string{"user.label.edge": name + ".test"}, nil, nil, nil)
+		p.instances["default/"+name] = iutil.NewEvent(time.Now(), "instance-started", "default", name, "").WithInstance(inst, true)
+	}
+
+	ctx := context.Background()
+
+	path := filepath.Join(tmpDir, "Caddyfile")
+	p := newPlugin(path)
+	add(p, "a", "node1")
+	add(p, "b", "node3")
+	add(p, "c", "node2")
+	p.reconcile(ctx)
+	p.Wait()
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, "a.test 10.0.0.11\nc.test 10.0.0.12\n", string(data), "the instance on node3 is left out, the rest still land")
+
+	// With every instance failing, the fault is the target's and the live file is not emptied.
+	onlyBad := filepath.Join(tmpDir, "OnlyBadCaddyfile")
+	pBad := newPlugin(onlyBad)
+	add(pBad, "b", "node3")
+	add(pBad, "d", "node4")
+	pBad.reconcile(ctx)
+	pBad.Wait()
+
+	_, err = os.Stat(onlyBad)
+	require.True(t, os.IsNotExist(err))
+}
+
 func TestPluginReconcileRendersEachTargetWithItsOwnTemplate(t *testing.T) {
 	tmpDir := t.TempDir()
 	pathExt := filepath.Join(tmpDir, "external.Caddyfile")
