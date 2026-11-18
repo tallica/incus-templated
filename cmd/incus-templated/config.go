@@ -49,6 +49,7 @@ type config struct {
 	HTTPAddr       string
 	Exclude        []string
 	Log            string
+	Metrics        bool
 	Pprof          bool
 
 	Workers      int
@@ -78,6 +79,7 @@ type mainActionArgs struct {
 	HTTPAddr       string
 	Exclude        []string
 	Log            string
+	Metrics        bool
 	Pprof          bool
 
 	Workers      int
@@ -245,6 +247,7 @@ func (c *config) validate() (*mainActionArgs, error) {
 		HTTPAddr:          c.HTTPAddr,
 		Exclude:           c.Exclude,
 		Log:               c.Log,
+		Metrics:           c.Metrics,
 		Pprof:             c.Pprof,
 		Workers:           c.Workers,
 		ReadTimeout:       c.ReadTimeout,

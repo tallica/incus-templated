@@ -147,7 +147,7 @@ func runCommand(cfg *config) *cli.Command {
 			},
 			&cli.StringFlag{
 				Name:        "http-address",
-				Usage:       "Address to serve /health and /ready on; empty disables it",
+				Usage:       "Address to serve /health, /ready and /metrics on; empty disables it",
 				Value:       defaultHTTPAddr,
 				Destination: &cfg.HTTPAddr,
 				Sources:     cli.EnvVars("INCUS_TEMPLATED_HTTP_ADDRESS"),
@@ -163,6 +163,12 @@ func runCommand(cfg *config) *cli.Command {
 				Usage:       "Log level for the chain and process: TRACE, DEBUG, INFO, WARN, ERROR",
 				Destination: &cfg.Log,
 				Sources:     cli.EnvVars("INCUS_TEMPLATED_LOG"),
+			},
+			&cli.BoolFlag{
+				Name:        "metrics",
+				Usage:       "Serve /metrics on the --http-address and record the render gauges; off leaves them registered at zero",
+				Destination: &cfg.Metrics,
+				Sources:     cli.EnvVars("INCUS_TEMPLATED_METRICS"),
 			},
 			&cli.BoolFlag{
 				Name:        "pprof",
@@ -257,6 +263,7 @@ func mainAction(ctx context.Context, args *mainActionArgs) error {
 		"read_timeout", args.ReadTimeout,
 		"sweep_project_delay", args.ProjectDelay,
 		"sweep_read_delay", args.ReadDelay,
+		"metrics", args.Metrics,
 		"pprof", args.Pprof,
 	)
 

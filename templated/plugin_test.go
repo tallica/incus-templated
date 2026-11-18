@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/lxc/incus-compose/ievent/iutil"
@@ -407,6 +409,7 @@ func TestPluginReconcileLeavesOutAnInstanceThatFailsToRender(t *testing.T) {
 				Text:  membersTmpl,
 				Flags: map[string]string{"member.node1": "10.0.0.11", "member.node2": "10.0.0.12"},
 			}},
+			Metrics: true,
 		})
 	}
 
@@ -428,6 +431,8 @@ func TestPluginReconcileLeavesOutAnInstanceThatFailsToRender(t *testing.T) {
 	data, err := os.ReadFile(path)
 	require.NoError(t, err)
 	require.Equal(t, "a.test 10.0.0.11\nc.test 10.0.0.12\n", string(data), "the instance on node3 is left out, the rest still land")
+	require.Equal(t, float64(0), testutil.ToFloat64(renderFailedGauge.WithLabelValues("os:"+path)))
+	require.Equal(t, float64(1), testutil.ToFloat64(renderLeftOutGauge.WithLabelValues("os:"+path)))
 
 	// With every instance failing, the fault is the target's and the live file is not emptied.
 	onlyBad := filepath.Join(tmpDir, "OnlyBadCaddyfile")
@@ -439,6 +444,8 @@ func TestPluginReconcileLeavesOutAnInstanceThatFailsToRender(t *testing.T) {
 
 	_, err = os.Stat(onlyBad)
 	require.True(t, os.IsNotExist(err))
+	require.Equal(t, float64(1), testutil.ToFloat64(renderFailedGauge.WithLabelValues("os:"+onlyBad)))
+	require.Equal(t, float64(0), testutil.ToFloat64(renderLeftOutGauge.WithLabelValues("os:"+onlyBad)))
 }
 
 func TestPluginReconcileRendersEachTargetWithItsOwnTemplate(t *testing.T) {

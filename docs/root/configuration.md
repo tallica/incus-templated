@@ -38,9 +38,10 @@ Every flag maps to exactly **one canonical environment variable** prefixed with 
 | `--config` | `INCUS_TEMPLATED_CONFIG` | | YAML file with more targets and `templates_dir`. See [Config file](#config-file). |
 | `--templates-dir` | `INCUS_TEMPLATED_TEMPLATES_DIR` | | Directory relative `template=` paths are resolved against. Overrides `templates_dir` from `--config`. |
 | `--debounce-window` | `INCUS_TEMPLATED_DEBOUNCE_WINDOW` | `250ms` | Quiet period before flushing burst events to avoid redundant reloads. |
-| `--http-address` | `INCUS_TEMPLATED_HTTP_ADDRESS` | `:9153` | Listening address for `/health` and `/ready` endpoints. Empty disables HTTP server. |
+| `--http-address` | `INCUS_TEMPLATED_HTTP_ADDRESS` | `:9153` | Listening address for `/health`, `/ready` and `/metrics` endpoints. Empty disables HTTP server. |
 | `--exclude` | `INCUS_TEMPLATED_EXCLUDES` | | Optional chain stage to exclude (e.g. `http` or `debounce`). Repeatable. |
 | `--log` | `INCUS_TEMPLATED_LOG` | `INFO` | Log level: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`. |
+| `--metrics` | `INCUS_TEMPLATED_METRICS` | `false` | Serve Prometheus `/metrics` on `--http-address` and record the render gauges. See [`/metrics`](#metrics-prometheus). |
 | `--pprof` | `INCUS_TEMPLATED_PPROF` | `false` | Enable Go runtime `/debug/pprof` endpoints on `--http-address`. |
 | `--workers` | `INCUS_TEMPLATED_WORKERS` | `16` | Maximum concurrent Incus API reads during fleet enrichment sweeps. |
 | `--read-timeout` | `INCUS_TEMPLATED_READ_TIMEOUT` | `10s` | Timeout budget for a single instance read from the Incus daemon. |
@@ -196,6 +197,14 @@ When `--http-address` is configured (default `:9153`), `incus-templated` serves 
 - **Response**:
   - `200 OK` when the chain state is **Warm** (`ChainWarm`). This means the initial fleet sweep is complete, instance IP addresses are discovered, and every target has been rendered.
   - `503 Service Unavailable` when the chain state is **Cold** (`ChainCold`) during initial startup synchronization or network disconnections.
+- A target that fails to render does not make the service unready; watch `/metrics` for that.
+
+### `/metrics` (Prometheus)
+- Available when `--metrics` is set to `true`.
+- Each target is labelled with the file it writes (`target="os:/etc/caddy/Caddyfile"`, or `target="<project>/<instance>:<path>"`):
+  - `templated_render_failed{target}`: `1` while the target fails to render and its live file is held as it was.
+  - `templated_render_instances_left_out{target}`: instances left out of the target's last render because they fail to render on their own. See [Templates](templates#template-data).
+- Also serves the enricher's gauges and the Go runtime metrics.
 
 ### `/debug/pprof/` (Profiling)
 - Available when `--pprof` is set to `true`.

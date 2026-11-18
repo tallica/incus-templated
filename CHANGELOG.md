@@ -30,6 +30,8 @@ variable and default path changed; there is no compatibility layer.
   Prometheus file_sd and per-member examples are in the docs. (by @tallica)
 - Every target's template is read and parsed at startup; a bad target stops
   `incus-templated` before it connects. (by @tallica)
+- `--metrics` serves `/metrics`, with `templated_render_failed` and
+  `templated_render_instances_left_out` per target. (by @tallica)
 
 ### Changed
 

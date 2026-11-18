@@ -62,11 +62,11 @@ func data(target Target, instances []*iutil.Event) Data {
 }
 
 // renderTarget renders d, leaving out the instances that fail to render on their own, so one bad
-// instance does not hold back every other change to the file.
-func renderTarget(logger *slog.Logger, target Target, d Data, funcs template.FuncMap) ([]byte, error) {
+// instance does not hold back every other change to the file. It returns how many it left out.
+func renderTarget(logger *slog.Logger, target Target, d Data, funcs template.FuncMap) ([]byte, int, error) {
 	content, err := render(target, d, funcs)
 	if err == nil {
-		return content, nil
+		return content, 0, nil
 	}
 
 	kept := []Instance{}
@@ -85,12 +85,18 @@ func renderTarget(logger *slog.Logger, target Target, d Data, funcs template.Fun
 	// Every instance failing alone points at the target rather than at them, and rendering
 	// none of them would empty the live file.
 	if len(kept) == 0 || len(kept) == len(d.Instances) {
-		return nil, err
+		return nil, 0, err
 	}
 
+	leftOut := len(d.Instances) - len(kept)
 	d.Instances = kept
 
-	return render(target, d, funcs)
+	content, err = render(target, d, funcs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return content, leftOut, nil
 }
 
 func reconcileDeployments(
@@ -101,11 +107,23 @@ func reconcileDeployments(
 	targets []Target,
 	funcs template.FuncMap,
 	instances []*iutil.Event,
+	metrics bool,
 ) {
 	for _, target := range targets {
 		targetKey := target.Key()
 
-		content, err := renderTarget(logger, target, data(target, instances), funcs)
+		content, leftOut, err := renderTarget(logger, target, data(target, instances), funcs)
+
+		if metrics {
+			failed := 0.0
+			if err != nil {
+				failed = 1
+			}
+
+			renderFailedGauge.WithLabelValues(targetKey).Set(failed)
+			renderLeftOutGauge.WithLabelValues(targetKey).Set(float64(leftOut))
+		}
+
 		if err != nil {
 			logger.Error("rendering", "target", target.String(), "err", err)
 

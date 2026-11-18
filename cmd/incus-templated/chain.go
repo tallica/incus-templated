@@ -55,6 +55,7 @@ func chain(logger *slog.Logger, args *mainActionArgs) []position {
 			enricher.ReadDelay(args.ReadDelay),
 			enricher.Project(serves(logger, args.Projects)),
 			enricher.Instance(servesInstance(logger, args.Targets)),
+			enricher.Metrics(args.Metrics),
 		)},
 	)
 
@@ -66,9 +67,10 @@ func chain(logger *slog.Logger, args *mainActionArgs) []position {
 			templated.Config{
 				Targets: args.Targets,
 				Funcs:   caddy.Funcs(logger, args.TemplatesDir),
+				Metrics: args.Metrics,
 			},
 		)},
-		position{plugin: http.New(logger, http.Listen(args.HTTPAddr), http.Pprof(args.Pprof)), optional: true},
+		position{plugin: http.New(logger, http.Listen(args.HTTPAddr), http.Metrics(args.Metrics), http.Pprof(args.Pprof)), optional: true},
 	)
 
 	out = append(out, logAt(logger, args.Log, "served")...)

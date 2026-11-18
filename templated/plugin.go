@@ -22,6 +22,9 @@ type Config struct {
 	// Funcs are added to every target's template, over the generic ones.
 	Funcs     template.FuncMap
 	InboxSize int
+
+	// Metrics turns on the render gauges; off leaves them registered at zero.
+	Metrics bool
 }
 
 // Plugin consumes enriched instance events and deploys each target's rendered template.
@@ -233,5 +236,5 @@ func (p *Plugin) reconcile(ctx context.Context) {
 		instances = append(instances, ev)
 	}
 
-	reconcileDeployments(ctx, p.deploy, p.logger, p.conn, p.cfg.Targets, p.cfg.Funcs, instances)
+	reconcileDeployments(ctx, p.deploy, p.logger, p.conn, p.cfg.Targets, p.cfg.Funcs, instances, p.cfg.Metrics)
 }

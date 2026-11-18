@@ -80,7 +80,7 @@ flowchart TD
 - **Warm Gating**: Reconciliations are suppressed while the event chain is cold (`ChainCold`). Deployments only trigger after the initial fleet sweep completes (`ChainWarm`), eliminating route churn during daemon reconnects.
 - **Automatic Load Balancing**: With the Caddy preset, multiple instances sharing the same domain label are automatically aggregated and sorted into a single load-balanced `reverse_proxy` directive.
 - **Custom Vhost Templating**: The Caddy preset supports custom site blocks per vhost from `--templates-dir` or inline, and a whole custom Caddyfile template per target.
-- **Observability**: Built-in HTTP endpoints on `:9153` for liveness (`/health`), fleet readiness (`/ready`), and Go runtime profiling (`/debug/pprof`).
+- **Observability**: Built-in HTTP endpoints on `:9153` for liveness (`/health`), fleet readiness (`/ready`), Prometheus metrics (`/metrics`, with `--metrics`), and Go runtime profiling (`/debug/pprof`).
 
 ---
 
